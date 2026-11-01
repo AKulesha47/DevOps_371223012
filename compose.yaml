@@ -25,5 +25,15 @@ services:
       timeout: 5s
       retries: 10
 
+  adminer:
+    image: adminer:5
+    ports:
+      - "8081:8080"
+    profiles:
+      - tools
+    depends_on:
+      db:
+        condition: service_healthy
+
 volumes:
   postgres_data:
