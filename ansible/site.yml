@@ -64,3 +64,52 @@
       ansible.builtin.service:
         name: postgresql
         state: restarted
+
+- name: Configure web servers
+  hosts: web
+  become: true
+
+  vars:
+    database_url: "postgresql://notes:notes_lab_password@db:5432/notes"
+
+  tasks:
+    - name: Install web server dependencies
+      ansible.builtin.apt:
+        name:
+          - python3-venv
+          - python3-packaging
+          - git
+        state: present
+        update_cache: true
+
+    - name: Clone notes repository
+      ansible.builtin.git:
+        repo: "https://github.com/AKulesha47/DevOps_371223012.git"
+        dest: /opt/notes
+        version: main
+      notify: Restart notes
+
+    - name: Install Python requirements
+      ansible.builtin.pip:
+        requirements: /opt/notes/requirements.txt
+        virtualenv: /opt/notes/.venv
+        virtualenv_command: python3 -m venv
+
+    - name: Configure notes systemd service
+      ansible.builtin.template:
+        src: templates/notes.service.j2
+        dest: /etc/systemd/system/notes.service
+      notify: Restart notes
+
+    - name: Start and enable notes service
+      ansible.builtin.systemd:
+        name: notes
+        state: started
+        enabled: true
+        daemon_reload: true
+
+  handlers:
+    - name: Restart notes
+      ansible.builtin.service:
+        name: notes
+        state: restarted
